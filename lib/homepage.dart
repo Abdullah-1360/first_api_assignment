@@ -22,27 +22,26 @@ class _HomepageState extends State<Homepage> {
 
   Future<void> getData() async {
     List<PersonDetails>? data = await fetchData();
-    if (data != null) {
-      setState(() {
-        personList = data;
-        isLoading = false;
-      });
-    }
+    setState(() {
+      isLoading = false;
+      personList = data ?? []; // Ensure it's non-null by default
+    });
   }
 
   Future<List<PersonDetails>?> fetchData() async {
     try {
-      var url = Uri.parse('http://192.168.100.188:3000/users');
+      final url = Uri.parse('http://192.168.100.188:3000/users');
       var response = await http.get(url);
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         return jsonData.map((e) => PersonDetails.fromJson(e)).toList();
+      } else {
+        throw Exception('Failed to load data');
       }
     } catch (e) {
-      SnackBar(content: Text(e.toString()));
-      // Handle exception
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      return null;
     }
-    return null;
   }
 
   @override
@@ -55,9 +54,12 @@ class _HomepageState extends State<Homepage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
-        itemCount: personList?.length ,
+        itemCount: personList?.length ?? 0, // Ensure no null errors
         itemBuilder: (context, index) {
-          final person = personList![index];
+          final person = personList?[index]; // Null-aware check
+          if (person == null) {
+            return Container(); // Handle case where person is null
+          }
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
             child: ListTile(
